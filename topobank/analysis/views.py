@@ -15,12 +15,12 @@ from django import template
 from rest_framework.generics import RetrieveAPIView
 
 from bokeh.layouts import row, column, widgetbox
-from bokeh.models import ColumnDataSource, CustomJS
+from bokeh.models import ColumnDataSource, CustomJS, Span
 from bokeh.palettes import Category10
 from bokeh.models.formatters import FuncTickFormatter
 from bokeh.models.ranges import DataRange1d
 from bokeh.plotting import figure
-from bokeh.embed import components
+from bokeh.embed import components, json_item
 from bokeh.models.widgets import CheckboxGroup
 from bokeh.models.widgets.markups import Paragraph
 
@@ -466,22 +466,56 @@ class PlotCardView(SimpleCardView):
         series_button_group.js_on_click(toggle_lines_callback)
         topography_button_group.js_on_click(toggle_lines_callback)
 
-        #
-        # Convert plot and widgets to HTML, add meta data for template
-        #
-        script, div = components(column(plot, widgets, sizing_mode='scale_width'))
+        #script, div = components(column(plot, widgets, sizing_mode='scale_width'))
 
+        #
+        # Extend context
+        #
         context.update(dict(
-            plot_script=script,
-            plot_div=div,
+            #plot_script=script,
+            #plot_div=div,
+            plot_item_json=json.dumps(json_item(column(plot, widgets, sizing_mode='scale_width'))),
+            #plot_figure=plot, # can be used to extend the plot
+            #plot_widgets=widgets,
             special_values=special_values,
             topography_colors=json.dumps(list(topography_colors.values())),
             series_dashes=json.dumps(list(series_dashes.values()))))
 
+        #self.extend_by_plot_components(context)
+
         return context
 
 class PowerSpectrumCardView(PlotCardView):
-    pass
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        #
+        # Find out common unit to use
+        #
+        analyses = context['analyses_success']
+        if len(analyses) > 0:
+            # TODO We need common units when triggering the analysis for several topographies
+            context['tip_radius_unit'] = analyses[0].topography.unit
+
+        #
+        # Draw vertical lines for marking cutoff
+        #
+        #plot = context['plot_figure']
+
+        # TODO replace with correct reliability cutoff (has to be calculated in correct units)
+        cutoff = 10
+        cutoff_span = Span(location=cutoff, dimension='height', line_color='red', line_width=2, line_dash='dashed')
+
+        #plot.add_layout(cutoff_span)
+
+        #context['plot_figure'] = plot
+        #self.extend_by_plot_components(context)
+
+        # context['plot_item_json'] = json.dumps(json_item(column(plot, widgets, sizing_mode='scale_width'))),
+
+        return context
+
 
 
 def submit_analyses_view(request):

@@ -39,7 +39,8 @@
           {% include 'analysis/analyses_alerts.html' %}
           {% if analyses_success %}
             {# Show all analyses for which we have results #}
-            {{ plot_div | safe }}
+            {# { plot_div | safe } #}
+            <div id="plot-item"></div>
           {% endif %}
         </div>
         {% if special_values %}
@@ -112,11 +113,17 @@
 
   {% if analyses_success %}
     {# Insert the script code needed for the plot #}
-    {{ plot_script | safe }}
+    {#   {{ plot_script | safe }} #}
   {% endif %}
 
   {# Additonal code for initialization #}
   <script>
+
+    {% if analyses_success %}
+      plot_item = JSON.parse('{{ plot_item_json | safe }}');
+      Bokeh.embed.embed_item(plot_item, 'plot-item');
+    {% endif %}
+
 
   /** THIS CODE MAYBE USEFUL WHEN ADDING STYLING IN BOKEH CODE, SEE VIEW
     // Apply given colors to labels
